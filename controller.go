@@ -31,10 +31,11 @@ const (
 )
 
 type Controller struct {
-	motorFS  string
-	sensorFS string
-	motors   []MotorDescriptor
-	sensors  []SensorDescriptor
+	motorFS   string
+	sensorFS  string
+	batteryFS string
+	motors    []MotorDescriptor
+	sensors   []SensorDescriptor
 }
 
 type ControllerOption func(ctrl *Controller) error
@@ -53,10 +54,18 @@ func WithSensorFS(fs string) ControllerOption {
 	}
 }
 
+func WithBatteryFS(fs string) ControllerOption {
+	return func(api *Controller) error {
+		api.batteryFS = fs
+		return nil
+	}
+}
+
 func NewController(options ...ControllerOption) (*Controller, error) {
 	ctrl := &Controller{
-		motorFS:  "/sys/class/tacho-motor",
-		sensorFS: "/sys/class/lego-sensor",
+		motorFS:   "/sys/class/tacho-motor",
+		sensorFS:  "/sys/class/lego-sensor",
+		batteryFS: "/sys/class/power_supply/legoev3-battery",
 	}
 	for _, option := range options {
 		if err := option(ctrl); err != nil {
@@ -95,6 +104,10 @@ func (ctrl *Controller) scanNodes(dir string, read func(name, nodePath string) e
 		}
 	}
 	return nil
+}
+
+func (ctrl *Controller) Battery() (*Battery, error) {
+	return readBattery(ctrl.batteryFS)
 }
 
 func (ctrl *Controller) NewMotor(outAddr string) (*Motor, error) {
@@ -137,6 +150,55 @@ func (ctrl *Controller) NewIRRemote(inAddr string) (*IRRemote, error) {
 				return nil, errors.Errorf("no ir-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
 			}
 			return newIRRemote(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+func (ctrl *Controller) NewTouch(inAddr string) (*Touch, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != touchDriver {
+				return nil, errors.Errorf("no touch-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newTouch(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+//color sensors
+func (ctrl *Controller) NewColorReflect(inAddr string) (*ColorReflect, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != colorDriver {
+				return nil, errors.Errorf("no color-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newColorReflect(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+func (ctrl *Controller) NewColorAmbient(inAddr string) (*ColorAmbient, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != colorDriver {
+				return nil, errors.Errorf("no color-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newColorAmbient(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+func (ctrl *Controller) NewColor(inAddr string) (*Color, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != colorDriver {
+				return nil, errors.Errorf("no color-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newColor(d)
 		}
 	}
 	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)

@@ -7,7 +7,9 @@ const (
 )
 
 const (
-	irDriver = "lego-ev3-ir"
+	irDriver    = "lego-ev3-ir"
+	touchDriver = "lego-ev3-touch"
+	colorDriver = "lego-ev3-color"
 )
 
 type SensorDescriptor struct {
