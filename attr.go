@@ -10,29 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	attrAddress          = "address"
-	attrDriverName       = "driver_name"
-	attrCommands         = "commands"
-	attrModeAttr         = "mode"
-	motorAttrCountPerRot = "count_per_rot"
-	motorAttrMaxSpeed    = "max_speed"
-	motorAttrSpeedSP     = "speed_sp"
-	motorAttrSpeed       = "speed"
-	motorAttrPositionSP  = "position_sp"
-	motorAttrPosition    = "position"
-	motorAttrStopAction  = "stop_action"
-	motorAttrPolarity    = "polarity"
-	motorAttrRampUpSP    = "ramp_up_sp"
-	motorAttrRampDownSP  = "ramp_down_sp"
-	motorAttrTimeSP      = "time_sp"
-	motorAttrState       = "state"
-	sensorAttrNumValues  = "num_values"
-	sensorAttrMode       = "mode"
-	sensorAttrModes      = "modes"
-)
-
-func valueAttribute(idx int) string {
+func valueAttr(idx int) string {
 	return fmt.Sprintf("value%d", idx)
 }
 

@@ -4,14 +4,39 @@ import (
 	"time"
 )
 
+type MotorDescriptor struct {
+	Name        string
+	Path        string
+	Address     string
+	DriverName  string
+	Commands    []string
+	CountPerRot int
+	MaxSpeed    int
+}
+
 const (
-	runForeverCommand  = "run-forever"
-	runToAbsPosCommand = "run-to-abs-pos"
-	runToRelPosCommand = "run-to-rel-pos"
-	runTimedCommand    = "run-timed"
-	runDirectCommand   = "run-direct"
-	stopCommand        = "stop"
-	resetCommand       = "reset"
+	motorAttrCountPerRot = "count_per_rot"
+	motorAttrMaxSpeed    = "max_speed"
+	motorAttrSpeedSP     = "speed_sp"
+	motorAttrSpeed       = "speed"
+	motorAttrPositionSP  = "position_sp"
+	motorAttrPosition    = "position"
+	motorAttrStopAction  = "stop_action"
+	motorAttrPolarity    = "polarity"
+	motorAttrRampUpSP    = "ramp_up_sp"
+	motorAttrRampDownSP  = "ramp_down_sp"
+	motorAttrTimeSP      = "time_sp"
+	motorAttrState       = "state"
+)
+
+const (
+	commandRunForever  = "run-forever"
+	commandRunToAbsPos = "run-to-abs-pos"
+	commandRunToRelPos = "run-to-rel-pos"
+	commandRunTimed    = "run-timed"
+	commandRunDirect   = "run-direct"
+	commandStop        = "stop"
+	commandReset       = "reset"
 )
 
 //List of all stop actions
@@ -74,11 +99,30 @@ type Motor struct {
 	Descriptor MotorDescriptor
 }
 
+func readMotorDescriptor(name string, nodePath string) (MotorDescriptor, error) {
+	md := MotorDescriptor{
+		Name: name,
+		Path: nodePath,
+	}
+	er := newAttrErrorReader(nodePath)
+	md.Address = er.readString(attrAddress)
+	md.DriverName = er.readString(attrDriverName)
+	md.Commands = er.readStringSlice(attrCommands)
+	md.CountPerRot = er.readInt(motorAttrCountPerRot)
+	md.MaxSpeed = er.readInt(motorAttrMaxSpeed)
+	return md, er.error()
+}
+
 //newMotor creates a new motor at the given file path
 func newMotor(md MotorDescriptor) *Motor {
 	return &Motor{
 		Descriptor: md,
 	}
+}
+
+//
+func (m *Motor) Move() *Move {
+	return NewMove(m)
 }
 
 //ChangeSpeedSP changes the speed_sp to the specified value
@@ -178,35 +222,35 @@ func (tm *Motor) State() (States, error) {
 
 //Stop executes the stop command
 func (tm *Motor) Stop() error {
-	return writeAttrString(tm.Descriptor.Path, "command", stopCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandStop)
 }
 
 //Reset executes the reset command
 func (tm *Motor) Reset() error {
-	return writeAttrString(tm.Descriptor.Path, "command", resetCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandReset)
 }
 
 //RunForever executes the run-forever command
 func (tm *Motor) RunForever() error {
-	return writeAttrString(tm.Descriptor.Path, "command", runForeverCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandRunForever)
 }
 
 //RunToAbsPos executes the run-to-abs-pos command
 func (tm *Motor) RunToAbsPos() error {
-	return writeAttrString(tm.Descriptor.Path, "command", runToAbsPosCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandRunToAbsPos)
 }
 
 //RunToRelPos executes the run-to-rel-pos command
 func (tm *Motor) RunToRelPos() error {
-	return writeAttrString(tm.Descriptor.Path, "command", runToRelPosCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandRunToRelPos)
 }
 
 //RunTimed executes the run-timed command
 func (tm *Motor) RunTimed() error {
-	return writeAttrString(tm.Descriptor.Path, "command", runTimedCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandRunTimed)
 }
 
 //RunDirect executes the run-direct command
 func (tm *Motor) RunDirect() error {
-	return writeAttrString(tm.Descriptor.Path, "command", runDirectCommand)
+	return writeAttrString(tm.Descriptor.Path, "command", commandRunDirect)
 }

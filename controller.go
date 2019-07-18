@@ -7,25 +7,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-type MotorDescriptor struct {
-	Name        string
-	Path        string
-	Address     string
-	DriverName  string
-	Commands    []string
-	CountPerRot int
-	MaxSpeed    int
-}
+const (
+	attrAddress    = "address"
+	attrDriverName = "driver_name"
+	attrCommands   = "commands"
+	attrModeAttr   = "mode"
+)
 
-type SensorDescriptor struct {
-	Name       string
-	Path       string
-	Address    string
-	DriverName string
-	Modes      []string
-	Mode       string
-	NumValues  int
-}
+//All out Addresses
+const (
+	OutA = "outA"
+	OutB = "outB"
+	OutC = "outC"
+	OutD = "outD"
+)
+
+//All in Addresses
+const (
+	In1 = "in1"
+	In2 = "in2"
+	In3 = "in3"
+	In4 = "in4"
+)
 
 type Controller struct {
 	motorFS  string
@@ -61,7 +64,7 @@ func NewController(options ...ControllerOption) (*Controller, error) {
 		}
 	}
 	ctrl.scanNodes(ctrl.motorFS, func(name, nodePath string) error {
-		md, err := ctrl.readMotorDescriptor(name, nodePath)
+		md, err := readMotorDescriptor(name, nodePath)
 		if err != nil {
 			return err
 		}
@@ -69,7 +72,7 @@ func NewController(options ...ControllerOption) (*Controller, error) {
 		return nil
 	})
 	ctrl.scanNodes(ctrl.sensorFS, func(name, nodePath string) error {
-		sd, err := ctrl.readSensorDescriptor(name, nodePath)
+		sd, err := readSensorDescriptor(name, nodePath)
 		if err != nil {
 			return err
 		}
@@ -94,30 +97,47 @@ func (ctrl *Controller) scanNodes(dir string, read func(name, nodePath string) e
 	return nil
 }
 
-func (ctrl *Controller) readMotorDescriptor(name string, nodePath string) (MotorDescriptor, error) {
-	md := MotorDescriptor{
-		Name: name,
-		Path: nodePath,
+func (ctrl *Controller) NewMotor(outAddr string) (*Motor, error) {
+	for _, d := range ctrl.motors {
+		if outAddr == d.Address {
+			return newMotor(d), nil
+		}
 	}
-	er := newAttrErrorReader(nodePath)
-	md.Address = er.readString(attrAddress)
-	md.DriverName = er.readString(attrDriverName)
-	md.Commands = er.readStringSlice(attrCommands)
-	md.CountPerRot = er.readInt(motorAttrCountPerRot)
-	md.MaxSpeed = er.readInt(motorAttrMaxSpeed)
-	return md, er.error()
+	return nil, errors.Errorf("no motors at adress (%s)", outAddr)
 }
 
-func (ctrl *Controller) readSensorDescriptor(name string, nodePath string) (SensorDescriptor, error) {
-	sd := SensorDescriptor{
-		Name: name,
-		Path: nodePath,
+func (ctrl *Controller) NewIRProxy(inAddr string) (*IRProxy, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != irDriver {
+				return nil, errors.Errorf("no ir-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newIRProxy(d)
+		}
 	}
-	er := newAttrErrorReader(nodePath)
-	sd.Address = er.readString(attrAddress)
-	sd.DriverName = er.readString(attrDriverName)
-	sd.Mode = er.readString(sensorAttrMode)
-	sd.Modes = er.readStringSlice(sensorAttrModes)
-	sd.NumValues = er.readInt(sensorAttrNumValues)
-	return sd, er.error()
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+func (ctrl *Controller) NewIRSeek(inAddr string) (*IRSeek, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != irDriver {
+				return nil, errors.Errorf("no ir-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newIRSeek(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
+}
+
+func (ctrl *Controller) NewIRRemote(inAddr string) (*IRRemote, error) {
+	for _, d := range ctrl.sensors {
+		if d.Address == inAddr {
+			if d.DriverName != irDriver {
+				return nil, errors.Errorf("no ir-sensor at adress (%s) but (%s)", inAddr, d.DriverName)
+			}
+			return newIRRemote(d)
+		}
+	}
+	return nil, errors.Errorf("no sensors at adress (%s)", inAddr)
 }
